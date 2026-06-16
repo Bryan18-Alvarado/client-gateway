@@ -1,24 +1,20 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateFileDto {
   @IsNumber()
-  @IsOptional()
-  id?: number;
-
-  @IsNumber()
-  @IsNotEmpty()
   model_id: number;
 
+  @IsString()
   mime: string;
 
-  file_name: string;
-
-  @IsDate()
   @IsOptional()
-  created_at: Date;
+  @IsString()
+  file_name?: string;
 
-  @IsDate()
   @IsOptional()
-  updated_at: Date;
+  buffer: Buffer;
+
+  @IsOptional()
+  @IsString()
+  originalName?: string;
 }
-export class UpdateFileDto extends CreateFileDto {}

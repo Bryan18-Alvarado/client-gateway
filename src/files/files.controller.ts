@@ -1,54 +1,49 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
-  Get,
   Inject,
   Param,
   ParseIntPipe,
   Post,
-  Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { FILES_SERVICES } from 'src/config/service';
-import { CreateFileDto, UpdateFileDto } from './dto/create-files.dto';
+
 @Controller('files')
 export class FilesController {
   constructor(
-    @Inject(FILES_SERVICES) private readonly filesClient: ClientProxy,
+    @Inject(FILES_SERVICES)
+    private readonly filesClient: ClientProxy,
   ) {}
 
-  @Get()
-  getAll() {
-    return this.filesClient.send({ cmd: 'get_all_files' }, {});
-  }
-
-  @Get(':id')
-  getOne(@Param('id', ParseIntPipe) id: number) {
-    return this.filesClient.send({ cmd: 'get_one_files' }, id);
-  }
-
   @Post()
-  create(@Body() filesDto: CreateFileDto) {
-    return this.filesClient.send({ cmd: 'create_files' }, filesDto);
-  }
-
-  @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() filesDto: UpdateFileDto,
+  @UseInterceptors(FileInterceptor('file'))
+  create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('model_id') model_id: string,
   ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
     return this.filesClient.send(
-      { cmd: 'update_files' },
+      { cmd: 'create_files' },
       {
-        id,
-        data: filesDto,
+        model_id: Number(model_id),
+        mime: file.mimetype,
+        originalName: file.originalname,
+        buffer: file.buffer.toString('base64'),
       },
     );
   }
 
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.filesClient.send({ cmd: 'delete_files' }, id);
+  @Delete(':id/avatar')
+  removeAvatar(@Param('id', ParseIntPipe) id: number) {
+    return this.filesClient.send({ cmd: 'delete_by_model' }, { model_id: id });
   }
 }
